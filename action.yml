@@ -1,0 +1,15 @@
+name: 'Railway PR Delete Action'
+description: 'Deletes a PR environment on Railway.'
+inputs:
+  RAILWAY_API_TOKEN:  # railway token
+    description: 'Railway API Token'
+    required: true
+  PROJECT_ID:
+    description: 'The id of the project to create environments on. Can be found on Settings -> General page'
+    required: true
+  DEST_ENV_NAME:
+    description: 'The name of the deployed PR environment. Usually a combination of pr-<PR_NUMBER>-<SHORT_COMMIT_HASH> passed inside of workflow'
+    required: true
+runs:
+  using: 'node16'
+  main: 'index.js'
