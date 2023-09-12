@@ -83,16 +83,16 @@ async function run() {
         // Get the GitHub token from the input (this is set in your action's YAML file)
         const token = core.getInput('github-token', { required: true });
 
-        // Initialize the Octokit client
-        const octokit = github.getOctokit(token);
-
         // Get the current repository and PR number from the context
         const { owner, repo } = github.context.repo;
         const prNumber = github.context.payload.pull_request.number;
         console.log("PR Number:", prNumber)
 
+        // Initialize the Octokit client
+        const octokit = github.getOctokit(token);
+
         // Fetch the commits for the PR
-        const { data: commits } = await octokit.pulls.listCommits({
+        const { data: commits } = await octokit.rest.pulls.listCommits({
             owner,
             repo,
             pull_number: prNumber,
@@ -102,7 +102,10 @@ async function run() {
 
         // Get the SHA of the first commit
         const firstCommitSHA = commits[0].sha;
+        console.log("firstCommitSHA: " + firstCommitSHA)
+
         const shortenedSHA = firstCommitSHA.substring(0, 8);
+        console.log("shortenedSHA: " + shortenedSHA)
 
         let destName = `pr-${prNumber}-${shortenedSHA}`;
         console.log("destName: " + destName)
