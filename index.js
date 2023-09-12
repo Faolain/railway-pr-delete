@@ -1,11 +1,12 @@
 const axios = require('axios');
 const core = require('@actions/core');
+const github = require('@actions/github');
+
 const { request, gql, GraphQLClient } = require('graphql-request')
 
 // Railway Required Inputs
 const RAILWAY_API_TOKEN = core.getInput('RAILWAY_API_TOKEN');
 const PROJECT_ID = core.getInput('PROJECT_ID');
-const DEST_ENV_NAME = core.getInput('DEST_ENV_NAME');
 const ENDPOINT = 'https://backboard.railway.app/graphql/v2';
 
 async function railwayGraphQLRequest(query, variables) {
@@ -54,9 +55,9 @@ async function getEnvironmentId() {
     return await railwayGraphQLRequest(query, variables)
 }
 
-async function checkIfEnvironmentExists() {
+async function checkIfEnvironmentExists(destName) {
     let response = await getEnvironmentId();
-    const filteredEdges = response.environments.edges.filter((edge) => edge.node.name === DEST_ENV_NAME);
+    const filteredEdges = response.environments.edges.filter((edge) => edge.node.name === destName);
     return filteredEdges.length == 1 ? { environmentId: filteredEdges[0].node.id, serviceId: filteredEdges[0].serviceInstances.edges[0].serviceId } : null;
 }
 
@@ -80,15 +81,44 @@ async function deleteEnvironment(environmentId) {
 
 async function run() {
     try {
-        const environmentIfExists = await checkIfEnvironmentExists();
+        // Get the GitHub token from the input (this is set in your action's YAML file)
+        const token = core.getInput('github-token', { required: true });
+
+        // Initialize the Octokit client
+        const octokit = github.getOctokit(token);
+
+        // Get the current repository and PR number from the context
+        const { owner, repo } = github.context.repo;
+        const prNumber = github.context.payload.pull_request.number;
+        console.log("PR Number:", prNumber)
+
+        // Fetch the commits for the PR
+        const { data: commits } = await octokit.pulls.listCommits({
+            owner,
+            repo,
+            pull_number: prNumber,
+            per_page: 1,
+            page: 1
+        });
+
+        // Get the SHA of the first commit
+        const firstCommitSHA = commits[0].sha;
+        const shortenedSHA = firstCommitSHA.substring(0, 8);
+
+        let destName = `pr-${prNumber}-${shortenedSHA}`;
+        console.log("destName: " + destName)
+
+        const environmentIfExists = await checkIfEnvironmentExists(destName);
         if (!environmentIfExists) {
-            throw new Error('Environment does not exist. It may have already been deleted.');
+            throw new Error('Environment does not exist. It may have already been deleted or it was never created');
         }
+
         const envrionmentDeleted = await deleteEnvironment(environmentIfExists?.environmentId);
+
         if (envrionmentDeleted) {
-            console.log(`Environment ${DEST_ENV_NAME} deleted successfully.`);
+            console.log(`Environment ${destName} deleted successfully.`);
         } else {
-            throw new Error(`Environment ${DEST_ENV_NAME} could not be deleted.`);
+            throw new Error(`Environment ${destName} could not be deleted.`);
         }
     } catch (error) {
         console.log(error)

@@ -7,8 +7,8 @@ inputs:
   PROJECT_ID:
     description: 'The id of the project to create environments on. Can be found on Settings -> General page'
     required: true
-  DEST_ENV_NAME:
-    description: 'The name of the deployed PR environment. Usually a combination of pr-<PR_NUMBER>-<SHORT_COMMIT_HASH> passed inside of workflow'
+  github-token:
+    description: 'GitHub token for API access'
     required: true
 runs:
   using: 'node16'
