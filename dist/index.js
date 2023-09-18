@@ -31167,7 +31167,7 @@ async function getEnvironmentId() {
 async function checkIfEnvironmentExists() {
     let response = await getEnvironmentId();
     const filteredEdges = response.environments.edges.filter((edge) => edge.node.name === DEST_ENV_NAME);
-    return filteredEdges.length == 1 ? { environmentId: filteredEdges[0].node.id, serviceId: filteredEdges[0].serviceInstances.edges[0].serviceId } : null;
+    return filteredEdges.length == 1 ? { environmentId: filteredEdges[0].node.id } : null;
 }
 
 async function deleteEnvironment(environmentId) {
@@ -31179,7 +31179,7 @@ async function deleteEnvironment(environmentId) {
         `
 
         let variables = {
-            "environmentId": environmentId,
+            "id": environmentId,
         }
 
         return await railwayGraphQLRequest(query, variables)
